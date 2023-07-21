@@ -1,160 +1,163 @@
- Юнит содержит класс TParsedFunction и описания типов, необходимых для
- работы с ним.
+﻿ The unit contains the TParsedFunction class and descriptions of types needed to
+ working with it.
 
- Класс TParsedFunction (PF) является интерпретатором (парсером) функций.
- Метод ParseFunction позволяет распознать любое математическое выражение,
- содержащее (опционально) x, y, z, различные мат. функции и численные
- константы (см. список ниже), записанное в виде строки. Распознанное выражение
- записывается особым образом в виде 4 массивов переменных. При этом метод
- содержит параметр ErCode, позволяющий определить, успешно ли прошла операция
- распознавания:
+ The TParsedFunction (PF) class is an interpreter (parser) of functions.
+ The ParseFunction method allows to recognize any mathematical expression,
+ containing (optionally) x, y, z, various math functions and numeric
+ constants (see list below), written as a string. The recognized expression
+ is written in a special way in the form of 4 arrays of variables. The method
+ contains the ErCode parameter, which allows to check if the recognition operation
+
+ The ErCode parameter indicates whether the recognition operation was successful or not:
    ErCode =
-     0 - Операция прошла успешно
-     1 - Встречена неизвестная функция или оператор
-     2 - В выражении содержится неравное количество открывающихся и
-         закрывающихся скобок
-     3 - Обнаружен недопустимый символ
-         (допустимыми являются: лат буквы любого регистра, цифры, круглые
-          скобки, пробел, символы + - * / ^ и точка.)
+     0 - The operation was a success
+     1 - An unknown function or operator is encountered
+     2 - The expression contains an unequal number of opening and closing brackets.
+         closing brackets
+     3 - Invalid character detected
+         (valid characters are: Latin letters of any case, digits, parentheses, space, + - * / ^ and dot).
+          brackets, space, symbols + - * / ^ and dot).
 
- Метод Compute позволяет вычислить значение ранее распознанной функции для
- заданных значений x, y и z (если параметр опущен, он считается равным 0).
+ The Compute method allows to calculate the value of a previously recognized function for
+ values given for x, y and z (if the parameter is omitted, it is considered equal to 0).
 
- Методы ImportParsed и ExportParsed позволяют импортировать/экспортировать
- распознанные функции в види запаси типа TPFRecord.
+ The ImportParsed and ExportParsed methods allow you to import/export
+ recognized functions in the visibility of the TPFRecord.
 
- Принцип и алгоритм работы парсера:
- Рассмотрим следующее выражение (в качестве примера):
+ Parser's principle and algorithm:
+ Consider the following expression (as an example):
 
  (5+у)*sin(x^3)+х
 
- Это выражение можно записать как а1 = а2 + а3,
- где а2 = (5+у)*sin(x^3), а а3 = х.
- В свою очередь, а2 = а4*а5, где а4 = 5+у, а а5 = sin(х^3)...
- И так далее. В конце концов мы получим цепочку простейших операций
- над двумя или одним операндом, каждый из которых может быть либо
- числом/переменной, либо другой парой операндов.
- Цепочка технически записывается тремя массивами: одномерным массивом,
- содержащим указание на операцию (в моем юните каждая операция обозначена
- номером и хранится в типе byte - вряд ли вы придумаете более 255 операций :)
- Я лично вспомнил только 23 :)). Второй массив является двухмерным и
- хранит ссылки на участывующие в операции операнды. Ссылки представляют
- собой номера звеньев цепи и хранятся в типе word.
- Третий массив содержит переменные, числовые константы и числа, обнаруженные
- в выражении. Этот массив связан двумя первыми операций присвоения, которая
- у меня имеет номер 0. В этом случае номер первого операнда ссылается не на
- элемент массива операндов, а на элемент этого тертьего массива.
- Как видите, все просто!
- Чтобы подсчитать значение выражения, необходимо ввести еще один массив
- (у меня обозначен как а). Заметьте, что операнды, участвующие в каждой
- операции, всегда имеют номер больше, чем у этого операнда. Поэтому, чтобы
- вычислить значение самого выражения (т.е. элемента а1), достаточно
- подсчитать значение каждого элемента а, начиная с конца массива.
+ This expression can be written as a1 = a2 + a3,
+ where a2 = (5+u)*sin(x^3), and a3 = x.
+ In turn, a2 = a4*a5, where a4 = 5+u, and a5 = sin(x^3)...
+ And so on. Eventually we get a chain of simple operations
+ on two or one operand, each of which can be either
+ a number/variable or another pair of operands.
+ The chain is technically written in three arrays: a one-dimensional array,
+ containing an indication of an operation (in my unit, each operation is labeled
+ number and is stored in type byte - you can hardly think of more than 255 operations :)
+ I personally remember only 23 :)). The second array is two-dimensional and
+ stores references to the operands participating in the operation. The references are
+ are numbers of chain links and are stored in the word type.
+ The third array contains variables, numeric constants and numbers found
+ in the expression. This array is linked with the first two assignment operations, which
+ in my case has the number 0. In this case, the number of the first operand refers not to
+ element of the operand array, but to the element of this third array.
+ As you can see, everything is simple!
+ To calculate the value of an expression, we need to enter another array
+ (in my case it is labeled a). Note that the operands involved in each
+ operations always have a number greater than that operand. Therefore, in order to
+ calculate the value of the expression itself (i.e., element a1), it is sufficient
+ calculate the value of each element of a, starting from the end of the array.
 
 
- Скорость вычисления:
- Благодаря тому, что распознавание функции производится только 1 раз,
- а вся операция вычисления по сути сводится к действиям над массивами,
- удается достичь скорости вычисления, сравнимой со скоростью вычисления
- того же выражения самим компилятором Дельфи.
- Сами скорости вычисления различаются в зависимости от сложности выражения
- (иногда скорость вычислений парсера получается даже выше, чем у компилятора!
-  Это вызвано определенной оптимизацие выражения при парсинге), но в среднем
-  время вычислений парсера составляет 150-200% времени вычислений компилятора.
+ Calculation speed:
+ Due to the fact that the function is recognized only once,
+ and the entire calculation operation is essentially reduced to actions on arrays,
+ it is possible to reach a computing speed, which can be compared to the speed of calculating
+ of the same expression by the Delphi compiler itself.
+ Calculation speeds themselves vary, depending on the complexity of the expression
+ (Sometimes parser's calculation speed is even higher than that of the compiler!
+  This is caused by a certain optimization of the expression during parsing), but on average
+  Parser's computation time is 150-200% of the compiler's computation time.
 
-  Точность вычислений:
-  Информация хранится в типе Single. В большей точности нет смысла, псокольку
-  в строке действительные числа передаются с очевидной погрешностью. В любом
-  случае, чтобы добиться большей точности, необходимо просто поменять single на
-  нужный тип, везде, где он встречается.
-  Точность вычислений в среднем составляет е-5
+  Accuracy of calculations:
+  The information is stored in type Single. There is no point in having more accuracy, because
+  real numbers in the string are transmitted with an obvious error. In any case
+  In any case, to get more accuracy, you just need to change single to
+  to the right type, wherever it occurs.
+  The accuracy of calculations is on average e-5
 
-  Формат представления строки:
-  - Длина строки ограничена 255 символами
-    (ограничение можно снять, заменив shortString на ansiString в
-    определении метода)
-  - Регистр букв НЕВАЖЕН
-  - Разрешается использовать пробелы
-  - Десятичная часть должна быть отделена точкой (а не запятой)
-  - Выражение должно быть записано по обычным правилам записи мат. выражений
-    для компьютера. (Например: x^2 + sin(5*y)/exp(4*z) )
-  - Программа учитывает приоритет действий (в порядке убывания: вычисление
-    функций, взятие в степень, умножение и деление, сложение и вычитание)
-  - Программа учитывает скобки
-  - Программа знает следующие мат. операции:
-      + : сложение
-      - : вычитание
-      / : деление
-      * : умножение
-      ^ : возведение в произвольную степень
-  - Программа знает следующие мат. функции:
-      sin     - синус
-      cos     - косинус
-      tan     - тангенс
-      cot     - котангенс
-      exp     - экспонента
-      ln      - нат. логарифм
-      sqr     - квадрат
-      sqrt    - квадратный корень
-      round   - округление
-      trunc   - целая часть
-      asin    - арксинус
-      acos    - арккосинус
-      atan    - арктангенс
-      acot    - арккотангенс
-      sinh    - гип. синус
-      cosh    - гип. косинус
-      tanh    - гип. тангенс
-      coth    - гип. котангенс
 
-  - Программа знает следующие числовые константы:
-      pi  - число пи
-      e   - число е
+  String presentation format:
+  - String length is limited to 255 characters
+    (the limit can be removed by replacing shortString with ansiString in the
+    method definition)
+  - Letter case is NOT important
+  - Spaces are allowed
+  - The decimal part must be separated by a period (not a comma)
+  - Expressions must be written using the normal rules for writing mathematical expressions
+    for computers. (For example: x^2 + sin(5*y)/exp(4*z) )
+  - The program takes into account the priority of operations (in descending order: calculating
+    functions, exponentiation, multiplication and division, addition and subtraction)
+  - The program keeps brackets in mind
+  - The program knows the following mathematical operations:
 
-  - Программа понимает функции вплоть до 3 переменных.
-    Переменные обозначаются буквами x, y, z
+      + : addition
+      - : subtraction
+      / : division
+      * : multiplication
+      ^ : arbitrary exponentiation
+  - The program knows the following math functions:
+      sin - sine
+      cos - cosine
+      tan - tangent
+      cot - cotangent
+      exp - exponent
+      ln - the nat. logarithm
+      sqr - square
+      sqrt - square root
+      round - rounding
+      trunc - integer part
+      asin - arcsine
+      acos - arc cosine
+      atan - arctangent
+      acot - arcotangent
+      sinh - hyp. sine
+      cosh cosine
+      tanh - hyp. tangent
+      coth - hyp. cotangent
 
-  - Программа понимает только числа, представленные в
-    десятином виде
+  - The program knows the following numerical constants:
+      pi - number pi
+      e - number e
 
-   Примечание (емкость массивов)
-   Требуемая емкость массива определяется как сумма:
-   кол-во операторов(функций) + кол-во вхождений величин + 2.
-   Например:  5*sin(x^3)+х
-   4 оператора (умножение, синус, сложение, возведение в степень)
+  - The program understands functions up to 3 variables.
+    The variables are denoted by letters x, y, z
+
+  - The program understands only numbers presented in decimal form.
+    decimal form
+
+   Note (array capacity)
+   The required capacity of an array is defined as the sum of:
+   number of operators (functions) + number of occurrences of values + 2.
+   For example:  5*sin(x^3)+x
+   4 operators (multiplication, sine, addition, reduction)
    +
-   4 вхождения величин (5, 3, х, х)
+   4 occurrences of variables (5, 3, x, x)
    +
    2 = 10.
-   Автору представляется, что емкости 100 должно хватить для записи
-   весьма сложного выражения. В любом случае емкость можно увеличить
-   изменением константы Capacity.
-   (Изначально в программе использовались динамические массивы,
-   но затем от них пришлось отказаться - слишком много геммороя :) )
+   It seems to the author that the capacity of 100 should be enough to write
+   a very complex expression. In any case the capacity can be increased
+   by changing the constant Capacity.
+   (Originally, dynamic arrays were used in the program,
+   but then I gave it up, because it was too much hassle :) )
 
    !WARNINGS!
 
-  Необходимо самостоятельно контролировать следующие вещи:
-  - Обращение к методу Compute для нераспознанной функции вызовет
-    ошибку времени исполнения
-  - Превышение возможной емкости массивов также, разумеется, вызовет ошибку.
-    Подгоните значение Capacity под собственные нужды.
-  - Ошибки типа деления на ноль, которые могут быть в выражении, лежат
-    полностью на совести пользователя  
+  It is necessary to control the following things yourself:
+  - Calling the Compute method for an unrecognized function will cause a
+    an execution time error.
+  - Exceeding a possible array capacity will of course also cause an error.
+    Adjust the Capacity value to your own needs.
+  - Errors like division by zero, which may be in the expression, are
+    entirely on the conscience of the user
 
-   ЛИЦЕНЗИЯ:
-   Данный юнит и представленные в нем классы и методы, а также алгоритм
-   распознавания функций являются интеллектуальной собственностью
-   ЩЕГЛОВА ИЛЬИ АЛЕКСАНДРОВИЧА <franzy@comail.ru>.
-   Данные класс, его методы и алгоритм распространяются бесплатно для
-   некоммерческого использования. Какое-либо другое распространение
-   указанной информации с целью получения выгоды запрещено. Использование
-   класса, его методов или алгоритма распознавания в программах,
-   распространяемых комерческим путем, возможно только с письменного
-   разрешения названного выше владельца авторского права.
+   LICENSE:
+   This unit and the classes and methods it contains, as well as the algorithm
+   recognition functions are intellectual property
+   OF ILYA A. SHCHEGLOV <franzy@comail.ru>.
+   The given class, its methods and algorithm are distributed free of charge for
+   non-commercial use. Any other distribution
+   This information for profit is prohibited. Use of
+   of the class, its methods or recognition algorithm in programs
+   distributed by commercial means is possible only with written
+   permission of the above copyright holder.
 
-   Данная информация должна быть указана в теле любой программы, использующей
-   алгоритм распознавания, класс или его методы.
+   This information must be specified in the body of any program using the
+   recognition algorithm, class, or its methods.
 
-   Благодарности:
-   Юрию Лапухову за помощь в обнаружении ошибок в алгоритме
+   Acknowledgements:
+   Yuri Lapukhov for his help in finding errors in the algorithm
